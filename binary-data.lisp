@@ -201,14 +201,15 @@
   (with-gensyms (typevar objectvar streamvar)
     `(define-generic-binary-class ,name ,superclasses ,slots
       (defmethod read-value ((,typevar (eql ',name)) ,streamvar &key)
-        (let* ,(mapcar #'(lambda (x) (slot->binding x streamvar)) slots)
-          (let ((,objectvar
-                 (make-instance
-                  ,@(or (cdr (assoc :dispatch options))
-                        (error "No :dispatch form found in ~s" whole))
-                  ,@(mapcan #'slot->keyword-arg slots))))
-            (read-object ,objectvar ,streamvar)
-            ,objectvar))))))
+	(with-slots ,(new-class-all-slots slots superclasses) ,typevar
+	  (let* ,(mapcar #'(lambda (x) (slot->binding x streamvar)) slots)
+            (let ((,objectvar
+                   (make-instance
+                    ,@(or (cdr (assoc :dispatch options))
+                          (error "No :dispatch form found in ~s" whole))
+                    ,@(mapcan #'slot->keyword-arg slots))))
+              (read-object ,objectvar ,streamvar)
+              ,objectvar)))))))
 
 (defun as-keyword (sym) (intern (string sym) :keyword))
 
