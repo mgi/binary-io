@@ -3,7 +3,7 @@
 ;;
 
 (defpackage :binary-io
-  (:use :common-lisp :alexandria)
+  (:use :common-lisp :alexandria :flexi-streams)
   (:export :define-binary-class
            :define-tagged-binary-class
            :define-binary-type
@@ -20,7 +20,7 @@
            :+null+))
 
 (defpackage :binary-io.common-datatypes
-  (:use :common-lisp :binary-io)
+  (:use :common-lisp :binary-io :flexi-streams)
   (:export
    :*endianness*
    :integer
@@ -50,3 +50,6 @@
    :ucs-2-string
    :ucs-2-terminated-string
    :8bit-string))
+
+(defpackage :binary-io.test
+  (:use :common-lisp :binary-io.common-datatypes :binary-io :flexi-streams))

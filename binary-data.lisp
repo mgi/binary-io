@@ -284,3 +284,4 @@ and superclasses have been saved."
   (declare (ignore stream))
   (let ((*in-progress-objects* (cons object *in-progress-objects*)))
     (call-next-method)))
+

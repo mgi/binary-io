@@ -8,5 +8,6 @@
   :components
   ((:file "packages")
    (:file "binary-data" :depends-on ("packages"))
-   (:file "common-datatypes" :depends-on ("packages" "binary-data")))
-  :depends-on (alexandria ieee-floats))
+   (:file "common-datatypes" :depends-on ("packages" "binary-data"))
+   (:file "binary-data-test" :depends-on ("packages" "common-datatypes" "binary-data")))
+  :depends-on (alexandria ieee-floats flexi-streams))
