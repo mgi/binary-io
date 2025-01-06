@@ -264,15 +264,29 @@ octet as byte."
 ;;; for 8bit character be it ASCII, ISO 8859 or UTF-8 sans extensions.
 (define-binary-type 8bit-string (length terminator)
   (:reader (in)
-           (let ((string (make-string length)))
-             (dotimes (i length)
-               (setf (char string i) (code-char (read-byte in))))
-             (subseq string 0 (position terminator string :test #'char=))))
+           (if length
+               (let ((string (make-string length)))
+                 (dotimes (i length)
+                   (setf (char string i) (code-char (read-byte in))))
+                 (subseq string 0 (position terminator string :test #'char=)))
+               ;; If LENGTH is nil then the string will be of variable
+               ;; size and stop at first TERMINATOR.
+               (let ((v (make-array 10 :adjustable t :fill-pointer 0)))
+                 (loop for c = (read-byte in nil)
+                       while (and c (not (zerop c)))
+                       do (vector-push-extend (code-char c) v)
+                       finally (return (coerce v 'string))))))
   (:writer (out string)
-           (let* ((outstring (make-string length :initial-element terminator)))
-             (loop for char across string
-                   for i from 0
-                   do (setf (char outstring i) (char string i)))
-             (loop for char across outstring
-                   do (write-byte (char-code char) out))))
+           (if length
+               (let* ((outstring (make-string length :initial-element terminator)))
+                 (loop for char across string
+                       for i from 0
+                       do (setf (char outstring i) (char string i)))
+                 (loop for char across outstring
+                       do (write-byte (char-code char) out)))
+               ;; If LENGTH is nil then write the string contents and
+               ;; end with a TERMINATOR value.
+               (loop for char across string
+                     do (write-byte (char-code char) out)
+                     finally (write-byte (char-code terminator) out))))
   (:size () length))

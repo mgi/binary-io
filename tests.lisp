@@ -61,3 +61,47 @@
     (is (equalp v2 (pack (unpack v2 2) 2)))
     (is (equalp (vector 3 0 3) (pack #*110011 2 1)))
     (is (loop for i across (unpack (vector #xff) 8 1) always (= i 1)))))
+
+(defun prepare-null-string (name)
+  (with-open-file (fd name :direction :output
+                           :if-exists :supersede
+                           :if-does-not-exist :create)
+    (format fd "Hello😀~c" #\Nul)))
+
+(defun read-back-with-type (name type)
+  (with-open-file (fd name :element-type '(unsigned-byte 8))
+    (read-value type fd)))
+
+(test null-string
+  (let ((name (format nil "/tmp/~x" (random #xffffff))))
+    (prepare-null-string name)
+    ;; Define fixed and variable length strings type
+    (define-binary-type fixed ()
+      (binary-io.common-datatypes:8bit-string :length 10 :terminator #\Nul))
+    (define-binary-type variable ()
+      (binary-io.common-datatypes:8bit-string :terminator #\Nul))
+    (let ((valid (format nil "Hello~c~c~c~c"
+                         ;; Decoded 😀
+                         (code-char #xF0)
+                         (code-char #x9F)
+                         (code-char #x98)
+                         (code-char #x80))))
+      (is (string= (read-back-with-type name 'fixed) valid))
+      (is (string= (read-back-with-type name 'variable) valid)))
+    ;; Write a fixed and read a variable back
+    (with-open-file (fd name :direction :io
+                             :if-exists :supersede
+                             :if-does-not-exist :create
+                             :element-type '(unsigned-byte 8))
+      (write-value 'fixed fd "Test")
+      (file-position fd 0)
+      (is (string= (read-value 'variable fd) "Test")))
+    ;; Write a variable and read a variable back
+    (with-open-file (fd name :direction :io
+                             :if-exists :supersede
+                             :if-does-not-exist :create
+                             :element-type '(unsigned-byte 8))
+      (write-value 'variable fd "Variable test")
+      (file-position fd 0)
+      (is (string= (read-value 'variable fd) "Variable test")))
+    (delete-file name)))
